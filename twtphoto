@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+import argparse
+import os
+import re
+
+import requests
+import tweepy
+
+
+CONSUMER_KEY = os.getenv('TWITTER_CONSUMER_KEY')
+CONSUMER_KEY = os.getenv('TWITTER_CONSUMER_SECRET')
+
+command_parser = argparse.ArgumentParser()
+command_parser.add_argument('url', help='URL for download')
+command_parser.add_argument('path', help='Destination dir',
+                            nargs='?', default='.')
+
+
+def download_image(url, path):
+    pattern = re.compile(r'/([^/]+?)(\.jpg)?(:large)?$')
+    image_name = '{}.jpg'.format(pattern.search(url).group(1))
+    with open(os.path.join(path, image_name), 'wb') as fp:
+        r = requests.get(url, allow_redirects=True)
+        fp.write(r.content)
+
+
+def is_tweet(url):
+    pattern = re.compile(r'^https?://twitter.com/\w+/status/\d+$')
+    matched = pattern.match(url)
+    return bool(matched)
+
+
+def parse_tweet(url, path):
+    auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+    api = tweepy.API(auth)
+    pattern = re.compile(r'/([^/]+?)$')
+    status_id = pattern.search(url).group(1)
+
+    status = api.get_status(status_id)
+
+    for media in status.extended_entities['media']:
+        url = '{}:large'.format(media['media_url'])
+        print(url)
+        download_image(url, path)
+
+
+def main():
+    args = command_parser.parse_args()
+
+    if is_tweet(args.url):
+        parse_tweet(args.url, args.path)
+    else:
+        download_image(args.url, args.path)
+
+
+if __name__ == '__main__':
+    main()
