@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+import requests
+
+from fake_useragent import UserAgent
+from lxml import html
+
+
+command_parser = argparse.ArgumentParser()
+command_parser.add_argument('number', help='Post number')
+command_parser.add_argument('path', help='Destination dir',
+                            nargs='?', default='.')
+
+ua = UserAgent()
+
+
+def download_image(number, path):
+    session = requests.session()
+    session.headers.update({
+        'User-Agent': ua.chrome,
+    })
+    resp = session.get(
+        'https://idol.sankakucomplex.com/post/show/{}'.format(number))
+    tree = html.fromstring(resp.content)
+
+    link = tree.xpath('//*[@id="image-link"]')[0]
+    url = link.get('href')
+    if not url:
+        image = link.find('img')
+        url = image.get('src')
+
+    if not url.startswith('http'):
+        url = 'https:' + url
+
+    print(url)
+    r = session.get(url, allow_redirects=True)
+    ext = r.headers['Content-Type'].split('/')[-1]
+    image_name = 'sankaku-{}.{}'.format(number, ext)
+    with open(os.path.join(path, image_name), 'wb') as fp:
+        fp.write(r.content)
+
+
+def main():
+    args = command_parser.parse_args()
+
+    download_image(args.number, args.path)
+
+
+if __name__ == '__main__':
+    main()
