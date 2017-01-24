@@ -7,7 +7,6 @@ import threading
 
 import requests
 
-from contextlib import closing
 from queue import Queue
 
 
@@ -34,12 +33,13 @@ def download_album(artist, album):
     threads = [threading.Thread(target=downloader, args=(queue,))
                for _ in range(THREAD_NUM)]
 
-    try:
-        url = URL_FORMAT.format(artist, 'album', album)
+    url = URL_FORMAT.format(artist, 'album', album)
+    resp = requests.get(url)
+    if resp.ok:
         content = requests.get(url).text
 
         dir_name = '{0}/{1}'.format(artist, album)
-    except HTTPError:
+    else:
         url = URL_FORMAT.format(artist, 'track', album)
         content = requests.get(url).text
 
