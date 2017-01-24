@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+import json
+import os
+import re
+import sys
+import threading
+
+import requests
+
+from contextlib import closing
+from queue import Queue
+
+
+URL_FORMAT = 'http://{0}.bandcamp.com/{1}/{2}'
+PATTERN = re.compile(r'\s*trackinfo\s*:\s*(\[.*\]),')
+THREAD_NUM = 8
+
+def downloader(queue):
+    while not queue.empty():
+        filename, url = queue.get()
+        try:
+            resp = requests.get(url)
+            with open(filename, 'wb') as fp:
+                fp.write(resp.content)
+            print('Done: {0}'.format(filename))
+        except Exception as e:
+            print('Cannot download {0}: {1}'.format(filename, url))
+        finally:
+            queue.task_done()
+
+
+def download_album(artist, album):
+    queue = Queue()
+    threads = [threading.Thread(target=downloader, args=(queue,))
+               for _ in range(THREAD_NUM)]
+
+    try:
+        url = URL_FORMAT.format(artist, 'album', album)
+        content = requests.get(url).text
+
+        dir_name = '{0}/{1}'.format(artist, album)
+    except HTTPError:
+        url = URL_FORMAT.format(artist, 'track', album)
+        content = requests.get(url).text
+
+        dir_name = artist
+
+    print(url)
+
+    json_data = PATTERN.search(content).group(1)
+    data = json.loads(json_data)
+
+    if not os.path.exists(artist):
+        os.mkdir(artist)
+    if not os.path.exists(dir_name):
+        os.mkdir(dir_name)
+
+    for index, song in enumerate(data):
+        title = song['title']
+        url = song['file']['mp3-128']
+        if url.startswith('//'):
+            url = 'http:' + url
+        filename = '{0}/{1:02d}-{2}.mp3'.format(dir_name, index + 1, title)
+
+        queue.put((filename, url))
+
+        print('{0}: {1}'.format(filename, url))
+
+    for thread in threads:
+        thread.setDaemon(True)
+        thread.start()
+
+    queue.join()
+    for thread in threads:
+        thread.join()
+
+if __name__ == '__main__':
+    download_album(sys.argv[1], sys.argv[2])
