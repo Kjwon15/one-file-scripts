@@ -37,7 +37,7 @@ def parse_tweet(url, path):
     pattern = re.compile(r'/([^/]+?)$')
     status_id = pattern.search(url).group(1)
 
-    status = api.get_status(status_id)
+    status = api.get_status(status_id, tweet_mode='extended')
 
     for media in status.extended_entities['media']:
         url = '{}:large'.format(media['media_url'])
