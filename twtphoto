@@ -17,10 +17,12 @@ command_parser.add_argument('path', help='Destination dir',
 
 
 def download_image(url, path):
-    pattern = re.compile(r'/([^/]+?)(\.\w+)?$')
+    pattern = re.compile(r'/(?P<name>[^/]+?)(?:\.(?P<ext>\w+))?(?::large)?$')
     r = requests.get(url, allow_redirects=True)
-    ext = r.headers['Content-Type'].split('/')[-1]
-    image_name = '{}.{}'.format(pattern.search(url).group(1), ext)
+    matched = pattern.search(url)
+    name = matched.group('name')
+    ext = matched.group('ext') or r.headers['Content-Type'].split('/')[-1]
+    image_name = '{}.{}'.format(name, ext)
     with open(os.path.join(path, image_name), 'wb') as fp:
         fp.write(r.content)
 
