@@ -28,7 +28,7 @@ def download_image(url, path):
 
 
 def is_tweet(url):
-    pattern = re.compile(r'^https?://twitter.com/\w+/status/\d+$')
+    pattern = re.compile(r'^https?://twitter.com/\w+/status/\d+(?:/photo/\d+)?$')
     matched = pattern.match(url)
     return bool(matched)
 
@@ -36,7 +36,7 @@ def is_tweet(url):
 def parse_tweet(url, path):
     auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
     api = tweepy.API(auth)
-    pattern = re.compile(r'/([^/]+?)$')
+    pattern = re.compile(r'/status/(\d+)(?:/photo/\d+)?$')
     status_id = pattern.search(url).group(1)
 
     status = api.get_status(status_id, tweet_mode='extended')
