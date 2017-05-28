@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import os
+import re
 
 import requests
 
@@ -14,6 +15,7 @@ command_parser.add_argument('path', help='Destination dir',
                             nargs='?', default='.')
 
 ua = UserAgent()
+URL_PATTERN = re.compile(r'https://idol.sankakucomplex.com/post/show/(?P<number>\d+)')
 
 
 def download_image(number, path):
@@ -44,8 +46,9 @@ def download_image(number, path):
 
 def main():
     args = command_parser.parse_args()
-
-    download_image(args.number, args.path)
+    matched = URL_PATTERN.match(args.number)
+    number = matched.group('number') if matched else args.number
+    download_image(number, args.path)
 
 
 if __name__ == '__main__':
