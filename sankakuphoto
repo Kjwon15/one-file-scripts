@@ -16,6 +16,7 @@ command_parser.add_argument('path', help='Destination dir',
 
 ua = UserAgent()
 URL_PATTERN = re.compile(r'https://idol.sankakucomplex.com/post/show/(?P<number>\d+)')
+EXT_PATTERN = re.compile(r'\.(?P<ext>\w+)(?:\?\S+)?$')
 
 
 def download_image(number, path):
@@ -38,7 +39,11 @@ def download_image(number, path):
 
     print(url)
     r = session.get(url, allow_redirects=True)
-    ext = r.headers['Content-Type'].split('/')[-1]
+    matched = EXT_PATTERN.match(url)
+    if matched:
+        ext = matched.group('ext')
+    else:
+        ext = r.headers['Content-Type'].split('/')[-1]
     image_name = 'sankaku-{}.{}'.format(number, ext)
     with open(os.path.join(path, image_name), 'wb') as fp:
         fp.write(r.content)
