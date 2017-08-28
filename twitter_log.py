@@ -23,23 +23,21 @@ def write_items(fp, title, items):
 
 
 def diff(old, new):
-    added, removed = {}, {}
-    for key in set(old.keys()) | set(new.keys()):
-        if key not in old:
-            added[key] = new[key]
-        elif key not in new:
-            removed[key] = old[key]
+    added, removed = [], []
+    for item in set(old) | set(new):
+        if item not in old:
+            added.append(item)
+        elif item not in new:
+            removed.append(item)
 
     return added, removed
 
 
-def get_users(method):
+def get_user(api, id_str):
+    user = api.get_user(id_str)
     return {
-        user.id_str: {
-            'name': user.name,
-            'screen_name': user.screen_name,
-        }
-        for user in tweepy.Cursor(method).items()
+        'name': user.name,
+        'screen_name': user.screen_name,
     }
 
 
@@ -55,8 +53,8 @@ api = tweepy.API(auth)
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S_%z')
 
 if __name__ == '__main__':
-    followers = get_users(api.followers)
-    friends = get_users(api.friends)
+    followers_ids = list(map(str, api.followers_ids()))
+    friends_ids = list(map(str, api.friends_ids()))
 
     # Load old
     try:
@@ -71,8 +69,31 @@ if __name__ == '__main__':
     except:
         old_friends = {}
 
-    new_followers, unfollowers = diff(old_followers, followers)
-    new_friends, unfriends = diff(old_friends, friends)
+    old_followers_ids = old_followers.keys()
+    old_friends_ids = old_friends.keys()
+
+    new_followers_ids, unfollowers_ids = diff(old_followers_ids, followers_ids)
+    new_friends_ids, unfriends_ids = diff(old_friends_ids, friends_ids)
+
+    new_followers = {
+        id_str: get_user(api, id_str)
+        for id_str in new_followers_ids
+    }
+
+    unfollowers = {
+        id_str: old_followers[id_str]
+        for id_str in unfollowers_ids
+    }
+
+    new_friends = {
+        id_str: get_user(api, id_str)
+        for id_str in new_friends_ids
+    }
+
+    unfriends = {
+        id_str: old_friends[id_str]
+        for id_str in unfriends_ids
+    }
 
     if any((new_followers, unfollowers, new_friends, unfriends)):
         with open_file(f'log_{timestamp}', 'w') as fp:
@@ -83,7 +104,19 @@ if __name__ == '__main__':
 
     # Write new
     with open_file('followers.json', 'w') as fp:
+        followers = {
+            id_str: old_followers[id_str]
+            for id_str in old_followers_ids
+            if id_str not in unfollowers_ids
+        }
+        followers.update(new_followers)
         json.dump(followers, fp, indent=2)
 
     with open_file('friends.json', 'w') as fp:
+        friends = {
+            id_str: old_friends[id_str]
+            for id_str in old_friends_ids
+            if id_str not in unfriends_ids
+        }
+        friends.update(new_friends)
         json.dump(friends, fp, indent=2)
