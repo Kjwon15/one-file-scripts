@@ -35,7 +35,7 @@ def diff(old, new):
 
 def get_users(method):
     return {
-        user.id: {
+        user.id_str: {
             'name': user.name,
             'screen_name': user.screen_name,
         }
@@ -54,35 +54,36 @@ api = tweepy.API(auth)
 
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S_%z')
 
-followers = get_users(api.followers)
-friends = get_users(api.friends)
+if __name__ == '__main__':
+    followers = get_users(api.followers)
+    friends = get_users(api.friends)
 
-# Load old
-try:
-    with open_file('followers.json', 'r') as fp:
-        old_followers = json.load(fp)
-except:
-    old_followers = {}
+    # Load old
+    try:
+        with open_file('followers.json', 'r') as fp:
+            old_followers = json.load(fp)
+    except:
+        old_followers = {}
 
-try:
-    with open_file('friends.json', 'r') as fp:
-        old_friends = json.load(fp)
-except:
-    old_friends = {}
+    try:
+        with open_file('friends.json', 'r') as fp:
+            old_friends = json.load(fp)
+    except:
+        old_friends = {}
 
-new_followers, unfollowers = diff(old_followers, followers)
-new_friends, unfriends = diff(old_friends, friends)
+    new_followers, unfollowers = diff(old_followers, followers)
+    new_friends, unfriends = diff(old_friends, friends)
 
-if any((new_followers, unfollowers, new_friends, unfriends)):
-    with open_file(f'log_{timestamp}', 'w') as fp:
-        write_items(fp, 'New followers:', new_followers)
-        write_items(fp, 'Unfollowers:', unfollowers)
-        write_items(fp, 'New friends:', new_friends)
-        write_items(fp, 'Unfriends', unfriends)
+    if any((new_followers, unfollowers, new_friends, unfriends)):
+        with open_file(f'log_{timestamp}', 'w') as fp:
+            write_items(fp, 'New followers:', new_followers)
+            write_items(fp, 'Unfollowers:', unfollowers)
+            write_items(fp, 'New friends:', new_friends)
+            write_items(fp, 'Unfriends', unfriends)
 
-# Write new
-with open_file('followers.json', 'w') as fp:
-    json.dump(followers, fp, indent=2)
+    # Write new
+    with open_file('followers.json', 'w') as fp:
+        json.dump(followers, fp, indent=2)
 
-with open_file('friends.json', 'w') as fp:
-    json.dump(friends, fp, indent=2)
+    with open_file('friends.json', 'w') as fp:
+        json.dump(friends, fp, indent=2)
