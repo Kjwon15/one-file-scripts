@@ -41,6 +41,31 @@ def get_user(api, id_str):
     }
 
 
+def first_run(api):
+    followers = {
+        user.id_str: {
+            'name': user.name,
+            'screen_name': user.screen_name,
+        }
+
+        for user in list(tweepy.Cursor(api.followers).items())
+    }
+    friends = {
+        user.id_str: {
+            'name': user.name,
+            'screen_name': user.screen_name,
+        }
+
+        for user in list(tweepy.Cursor(api.friends).items())
+    }
+
+    with open_file('followers.json', 'w') as fp:
+        json.dump(followers, fp, indent=2)
+
+    with open_file('friends.json', 'w') as fp:
+        json.dump(friends, fp, indent=2)
+
+
 CONSUMER_KEY = os.getenv('TWITTER_CONSUMER_KEY')
 CONSUMER_SECRET = os.getenv('TWITTER_CONSUMER_SECRET')
 ACCESS_KEY = os.getenv('TWITTER_ACCESS_KEY')
