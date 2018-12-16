@@ -38,14 +38,22 @@ def download_image(number, path):
         url = 'https:' + url
 
     print(url)
-    r = session.get(url, allow_redirects=True)
-    matched = EXT_PATTERN.match(url)
+    r = None
+    matched = EXT_PATTERN.search(url)
     if matched:
         ext = matched.group('ext')
     else:
+        r = session.get(url, allow_redirects=True)
         ext = r.headers['Content-Type'].split('/')[-1]
     image_name = 'sankaku-{}.{}'.format(number, ext)
-    with open(os.path.join(path, image_name), 'wb') as fp:
+    filepath = os.path.join(path, image_name)
+    if os.path.exists(filepath):
+        print('Already exists')
+        return
+
+    if r is None:
+        r = session.get(url, allow_redirects=True)
+    with open(filepath, 'wb') as fp:
         fp.write(r.content)
 
 
