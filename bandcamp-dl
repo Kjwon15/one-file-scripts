@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import html
 import json
 import os
 import re
@@ -12,7 +13,7 @@ from queue import Queue
 
 
 URL_FORMAT = 'http://{0}.bandcamp.com/{1}/{2}'
-PATTERN = re.compile(r'\s*trackinfo\s*:\s*(\[.*\]),')
+PATTERN = re.compile(r'data-tralbum="([^"]*)"')
 THREAD_NUM = 8
 
 
@@ -55,7 +56,8 @@ def download_album(artist, album):
 
     print(url)
 
-    json_data = PATTERN.search(content).group(1)
+    json_data = html.unescape(PATTERN.search(content).group(1))
+    print(json_data)
     data = json.loads(json_data)
 
     if not os.path.exists(artist):
@@ -63,7 +65,7 @@ def download_album(artist, album):
     if not os.path.exists(dir_name):
         os.mkdir(dir_name)
 
-    for index, song in enumerate(data):
+    for index, song in enumerate(data['trackinfo']):
         title = song['title']
         url = song['file']['mp3-128']
         if url.startswith('//'):
